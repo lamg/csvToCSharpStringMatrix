@@ -1,0 +1,37 @@
+module Main where
+import System.IO (hPutStrLn, stderr, stdin, hGetContents)
+import Data.List (intercalate)
+import Data.Text (pack, unpack, splitOn)
+
+main :: IO ()
+main = getInput >>= return . convert >>= either putStderr putStr
+
+putStderr :: String -> IO ()
+putStderr = hPutStrLn stderr
+
+getInput :: IO [String]
+getInput = hGetContents stdin >>= return . lines
+
+convert :: [String] -> Either String String
+convert = (unlines <$>) . sequence . surround (Right "{") (Right "}") . map toArray
+
+toArray :: String -> Either String String
+toArray s = splitByComma >>= map quote >>= 
+  return . surround '{' '}' . intercalate ","
+
+splitByComma :: String -> [String]
+splitByComma = map unpack . splitOn (pack ",") . pack
+
+surround :: a -> a -> [a] -> [a]
+surround x y l = x:l ++ [y]
+
+quote :: String -> Either String String
+quote [] = Right "\"\""
+quote [x:xs] = 
+  if x == q || l == q then 
+    if x == q && l == q then Right (x:xs)
+    else Left "Quotes not matching"
+  else Right $ surround q q (x:xs)
+  where 
+    l = last xs
+    q = '"'

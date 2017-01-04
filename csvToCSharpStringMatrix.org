@@ -1,0 +1,180 @@
+#+TITLE: Convert a CSV table to a C# source code string matrix
+#+AUTHOR: Luis Ángel Méndez Gort
+#+EMAIL: gort.andres000@gmail.com
+#+LATEX_CLASS: article
+#+OPTIONS: toc:nil
+
+* Abstract
+This project comes out from the necessity of testing a
+parser written in C# without relying on any IO operation.
+This practice is a standard in testing, since it allows
+the isolation of parsing errors from IO errors or any
+other error in a complex library to get the data.
+
+* The program
+The converter reads a CSV (separated by semicolon) from standard input
+and writes the C# source code string matrix to standard output. Errors
+are written to standard error. In the conversion, every element of the
+CSV table must be quoted (surrounded with ") if is not already. Every
+row of the CSV table represents a row in the C# source code string
+matrix, thus it must be sorrounded with { and }. Finally, the set of
+rows is surrounded with { and }.
+
+#+NAME: main
+#+BEGIN_SRC haskell
+main :: IO ()
+main = getInput >>= return . convert >>= either putStderr putStr
+
+putStderr :: String -> IO ()
+putStderr = hPutStrLn stderr
+
+getInput :: IO [String]
+getInput = hGetContents stdin >>= return . lines
+#+END_SRC
+
+The ~convert~ function gets the input string splitted by
+newline characters.
+
+#+NAME: convert
+#+BEGIN_SRC haskell
+convert :: [String] -> Either String String
+convert = (unlines <$>) . sequence . surround (Right "{") (Right "}") . map toArray
+#+END_SRC
+
+The ~surround~ function adds its first parameter to
+the beginning of a list and its second parameter to
+the end of that list.
+
+#+NAME: surround
+#+BEGIN_SRC haskell
+surround :: a -> a -> [a] -> [a]
+surround x y l = x:l ++ [y]
+#+END_SRC
+
+The ~toArray~ function converts a String in CSV format
+(a row) to a C# source code string array.
+
+#+NAME: toArray
+#+BEGIN_SRC haskell
+toArray :: String -> Either String String
+toArray s = return (splitBySemi s) >>= 
+  sequence . map quote >>= 
+  return . (++ ",") .surround '{' '}' . intercalate ","
+
+splitBySemi :: String -> [String]
+splitBySemi = map unpack . splitOn (pack ";") . pack
+#+END_SRC
+
+The ~quote~ function surrounds with double quotes
+a String if is not surrounded by double quotes.
+
+#+NAME: quote
+#+BEGIN_SRC haskell
+quote :: String -> Either String String
+quote [] = Right "\"\""
+quote [x]|x == '"' = Left "Quotes not matching"
+         |otherwise = Right $ surround '"' '"' [x]
+quote (x:xs) = 
+  if x == q || l == q then 
+    if x == q && l == q then Right (x:xs)
+    else Left "Quotes not matching"
+  else Right $ surround q q (x:xs)
+  where 
+    l = last xs
+    q = '"'
+#+END_SRC
+
+The 
+
+* The context
+
+** Modules
+Now with all the programming done, the context
+is defined.
+
+#+BEGIN_SRC haskell :tangle src/Main.hs :noweb yes
+module Main where
+import System.IO (hPutStrLn, stderr, stdin, hGetContents)
+import Data.List (intercalate)
+import Data.Text (pack, unpack, splitOn)
+
+<<main>>
+
+<<convert>>
+
+<<toArray>>
+
+<<surround>>
+
+<<quote>>
+#+END_SRC
+
+** Cabal file
+#+BEGIN_SRC haskell-cabal :tangle csvToCSharpStringMatrix.cabal
+name:                csvToCSharpStringMatrix
+version:             0.1.0.0
+synopsis:            Converts a CSV table to a C# source code string matrix
+-- description:         
+homepage:            https://github.com/lamg/csvToCSharpStringMatrix
+license:             BSD3
+license-file:        LICENSE
+author:              Luis Ángel Méndez Gort
+maintainer:          gort.andres000@gmail.com
+copyright:           2016 Luis Ángel Méndez Gort
+category:            Text
+build-type:          Simple
+extra-source-files:  ChangeLog.md
+cabal-version:       >=1.10
+
+executable csvToCSharpStringMatrix
+  main-is:             Main.hs
+  -- other-modules:       
+  -- other-extensions:    
+  build-depends:       base >=4.9 && <4.10
+                       , text >=1.2 && <1.3
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+#+END_SRC
+** TODO ChangeLog file
+#+BEGIN_SRC org-mode :tangle ChangeLog.md
+# Revision history for csvToCSharpStringMatrix
+
+## 0.1.0.0  -- 2016-12-29
+
+* First version. Released on an unsuspecting world.
+#+END_SRC
+#+END_SRC
+
+** License file
+#+BEGIN_SRC :tangle LICENSE
+Copyright (c) 2016, Luis Ángel Méndez Gort
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+
+    * Neither the name of Luis Ángel Méndez Gort nor the names of other
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#+END_SRC

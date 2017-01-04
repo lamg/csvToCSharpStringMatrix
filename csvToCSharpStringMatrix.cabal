@@ -1,0 +1,23 @@
+name:                csvToCSharpStringMatrix
+version:             0.1.0.0
+synopsis:            Converts a CSV table to a C# source code string matrix
+-- description:         
+homepage:            https://github.com/lamg/csvToCSharpStringMatrix
+license:             BSD3
+license-file:        LICENSE
+author:              Luis Ángel Méndez Gort
+maintainer:          gort.andres000@gmail.com
+copyright:           2016 Luis Ángel Méndez Gort
+category:            Text
+build-type:          Simple
+extra-source-files:  ChangeLog.md
+cabal-version:       >=1.10
+
+executable csvToCSharpStringMatrix
+  main-is:             Main.hs
+  -- other-modules:       
+  -- other-extensions:    
+  build-depends:       base >=4.9 && <4.10
+                       , text >=1.2 && <1.3
+  hs-source-dirs:      src
+  default-language:    Haskell2010
