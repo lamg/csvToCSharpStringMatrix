@@ -1,4 +1,4 @@
-# Convert a CSV table to a C# source code string matrix
+## Convert a CSV table to a C# source code string matrix
 
 ### Abstract
 
